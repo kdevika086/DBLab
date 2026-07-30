@@ -11,19 +11,19 @@ int main(int argc, char *argv[]) {
   // StaticBuffer buffer;
   // OpenRelTable cache;
 
- // return FrontendInterface::handleFrontend(argc, argv);
+  return FrontendInterface::handleFrontend(argc, argv);
   unsigned char buffer[BLOCK_SIZE];
 
   //printing hello
-  Disk::readBlock(buffer, 7000);
-  char message[] = "hello";
-  memcpy(buffer + 20, message, 6);
-  Disk::writeBlock(buffer, 7000);
-  unsigned char buffer2[BLOCK_SIZE];
-  char message2[6];
-  Disk::readBlock(buffer2, 7000);
-  memcpy(message2, buffer2 + 20, 6);
-  std::cout << message2 << "\n";
+  // Disk::readBlock(buffer, 7000);
+  // char message[] = "hello";
+  // memcpy(buffer + 20, message, 6);
+  // Disk::writeBlock(buffer, 7000);
+  // unsigned char buffer2[BLOCK_SIZE];
+  // char message2[6];
+  // Disk::readBlock(buffer2, 7000);
+  // memcpy(message2, buffer2 + 20, 6);
+  // std::cout << message2 << "\n";
 
   //modification
   // for (int block = 0; block < 4; block++) {
