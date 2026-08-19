@@ -7,64 +7,101 @@
 
 int main(int argc, char *argv[]) {
   Disk disk_run;
+  StaticBuffer buffer;
+  OpenRelTable cache;
+
+  RelCatEntry relCatEntry;
+
+for (int i = 0; i < 3; i++) {
+
+    int ret = RelCacheTable::getRelCatEntry(i, &relCatEntry);
+
+    if (ret != SUCCESS) {
+        printf("Error getting relation catalog entry\n");
+        continue;
+    }
+
+    printf("Relation: %s\n", relCatEntry.relName);
+
+    for (int j = 0; j < relCatEntry.numAttrs; j++) {
+
+        AttrCatEntry attrCatEntry;
+
+        ret = AttrCacheTable::getAttrCatEntry(i, j, &attrCatEntry);
+
+        if (ret != SUCCESS) {
+            printf("Error getting attribute catalog entry\n");
+            continue;
+        }
+
+        const char *attrType =
+            attrCatEntry.attrType == NUMBER ? "NUM" : "STR";
+
+        printf("  %s: %s\n",
+               attrCatEntry.attrName,
+               attrType);
+    }
+
+    printf("\n");
+}
 
   // create objects for the relation catalog and attribute catalog
-  RecBuffer relCatBuffer(RELCAT_BLOCK);
+  // RecBuffer relCatBuffer(RELCAT_BLOCK);
 
-  HeadInfo relCatHeader;
+  // HeadInfo relCatHeader;
 
-  // load the headers of both the blocks into relCatHeader and attrCatHeader.
-  relCatBuffer.getHeader(&relCatHeader);
+  // // load the headers of both the blocks into relCatHeader and attrCatHeader.
+  // relCatBuffer.getHeader(&relCatHeader);
 
-  for (int i = 0; i < relCatHeader.numEntries; i++) {
+  // for (int i = 0; i < relCatHeader.numEntries; i++) {
 
-    Attribute relCatRecord[RELCAT_NO_ATTRS]; // will store the record from the relation catalog
+  //   Attribute relCatRecord[RELCAT_NO_ATTRS]; // will store the record from the relation catalog
 
-    relCatBuffer.getRecord(relCatRecord, i);
+  //   relCatBuffer.getRecord(relCatRecord, i);
 
-    printf("Relation: %s\n", relCatRecord[RELCAT_REL_NAME_INDEX].sVal);
-    int currentBlock= ATTRCAT_BLOCK;
-    while(currentBlock !=-1)
-    {
-      RecBuffer attrCatBuffer(currentBlock);
-      HeadInfo attrCatHeader;
-      attrCatBuffer.getHeader(&attrCatHeader);
+  //   printf("Relation: %s\n", relCatRecord[RELCAT_REL_NAME_INDEX].sVal);
+  //   int currentBlock= ATTRCAT_BLOCK;
+  //   while(currentBlock !=-1)
+  //   {
+  //     RecBuffer attrCatBuffer(currentBlock);
+  //     HeadInfo attrCatHeader;
+  //     attrCatBuffer.getHeader(&attrCatHeader);
 
-      //class->batch in students
-      for(int j=0; j<attrCatHeader.numEntries; j++)
-      {
-        Attribute attrCatRecord[ATTRCAT_NO_ATTRS];
-        attrCatBuffer.getRecord(attrCatRecord, j);
+  //     //class->batch in students
+  //     for(int j=0; j<attrCatHeader.numEntries; j++)
+  //     {
+  //       Attribute attrCatRecord[ATTRCAT_NO_ATTRS];
+  //       attrCatBuffer.getRecord(attrCatRecord, j);
 
-        if((strcmp(attrCatRecord[ATTRCAT_REL_NAME_INDEX].sVal, "Students") == 0) && 
-          (strcmp(attrCatRecord[ATTRCAT_ATTR_NAME_INDEX].sVal, "Class") == 0)) 
-        {
-          strcpy(attrCatRecord[ATTRCAT_ATTR_NAME_INDEX].sVal, "Batch");
-          attrCatBuffer.setRecord(attrCatRecord,j);
-          break;
-        }
-      }
+  //       if((strcmp(attrCatRecord[ATTRCAT_REL_NAME_INDEX].sVal, "Students") == 0) && 
+  //         (strcmp(attrCatRecord[ATTRCAT_ATTR_NAME_INDEX].sVal, "Class") == 0)) 
+  //       {
+  //         strcpy(attrCatRecord[ATTRCAT_ATTR_NAME_INDEX].sVal, "Batch");
+  //         attrCatBuffer.setRecord(attrCatRecord,j);
+  //         break;
+  //       }
+  //     }
 
-      //printing all attributes
-      for (int j = 0; j < attrCatHeader.numEntries; j++) {
+  //     //printing all attributes
+  //     for (int j = 0; j < attrCatHeader.numEntries; j++) {
 
-        // declare attrCatRecord and load the attribute catalog entry into it
-        Attribute attrCatRecord[ATTRCAT_NO_ATTRS];
-        attrCatBuffer.getRecord(attrCatRecord, j);
+  //       // declare attrCatRecord and load the attribute catalog entry into it
+  //       Attribute attrCatRecord[ATTRCAT_NO_ATTRS];
+  //       attrCatBuffer.getRecord(attrCatRecord, j);
 
-        if (strcmp(relCatRecord[RELCAT_REL_NAME_INDEX].sVal,
-            attrCatRecord[ATTRCAT_REL_NAME_INDEX].sVal) == 0) {
-          const char *attrType = attrCatRecord[ATTRCAT_ATTR_TYPE_INDEX].nVal == NUMBER ? "NUM" : "STR";
-          printf("  %s: %s\n",
-        attrCatRecord[ATTRCAT_ATTR_NAME_INDEX].sVal,
-        attrType);
-        }
-      }
-      currentBlock= attrCatHeader.rblock;
-    }
+  //       if (strcmp(relCatRecord[RELCAT_REL_NAME_INDEX].sVal,
+  //           attrCatRecord[ATTRCAT_REL_NAME_INDEX].sVal) == 0) {
+  //         const char *attrType = attrCatRecord[ATTRCAT_ATTR_TYPE_INDEX].nVal == NUMBER ? "NUM" : "STR";
+  //         printf("  %s: %s\n",
+  //       attrCatRecord[ATTRCAT_ATTR_NAME_INDEX].sVal,
+  //       attrType);
+  //       }
+  //     }
+  //     currentBlock= attrCatHeader.rblock;
+  //   }
     
-    printf("\n");
-  }
+  //   printf("\n");
+  // }
 
   return 0;
 }
