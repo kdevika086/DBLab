@@ -3,9 +3,9 @@
 
 AttrCacheEntry* AttrCacheTable::attrCache[MAX_OPEN];
 
-/* returns the attrOffset-th attribute for the relation corresponding to relId
-NOTE: this function expects the caller to allocate memory for `*attrCatBuf`
-*/
+
+//OLD getAttraCatEntry WHERE WE FOUND ENTRY BASED ON OFFSET
+
 int AttrCacheTable::getAttrCatEntry(int relId, int attrOffset, AttrCatEntry* attrCatBuf) {
   // check if 0 <= relId < MAX_OPEN and return E_OUTOFBOUND otherwise
   if (relId < 0 || relId >= MAX_OPEN) 
@@ -27,6 +27,33 @@ int AttrCacheTable::getAttrCatEntry(int relId, int attrOffset, AttrCatEntry* att
     }
   }
   // there is no attribute at this offset
+  return E_ATTRNOTEXIST;
+}
+
+
+//EARLIER USED getAttrCatEntry BASED ON OFFSET...NOW BASED ON ATTRIBUTE NAME
+int AttrCacheTable::getAttrCatEntry(int relId, char attrName[ATTR_SIZE], AttrCatEntry* attrCatBuf) {
+
+  // check that relId is valid and corresponds to an open relation
+  if (relId < 0 || relId >= MAX_OPEN) 
+  {
+    return E_OUTOFBOUND;
+  }
+  if (attrCache[relId] == nullptr)  
+  {
+    return E_RELNOTOPEN;
+  }
+  // iterate over the entries in the attribute cache and set attrCatBuf to the entry that
+  //    matches attrName
+  for(AttrCacheEntry* entry= attrCache[relId]; entry!=nullptr; entry= entry->next)
+  {
+    if(strcmp(entry->attrCatEntry.attrName, attrName)==0)
+    {
+      *attrCatBuf = entry->attrCatEntry;
+      return SUCCESS;
+    }
+  }
+  // no attribute with name attrName for the relation
   return E_ATTRNOTEXIST;
 }
 
