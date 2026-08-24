@@ -17,10 +17,9 @@ OpenRelTable::OpenRelTable() {
 	tableMetaInfo[ATTRCAT_RELID].free = false;
 	strcpy(tableMetaInfo[ATTRCAT_RELID].relName, "ATTRIBUTECAT");
 
-	//part of exercise 1
+	//For Exercise 1
 	tableMetaInfo[2].free = false;
 	strcpy(tableMetaInfo[2].relName, "Students");
-	//ends here
 
   /**** setting up Relation Catalog relation in the Relation Cache Table****/
   RecBuffer relCatBlock(RELCAT_BLOCK);
@@ -37,20 +36,6 @@ OpenRelTable::OpenRelTable() {
   RelCacheTable::relCache[RELCAT_RELID] = (struct RelCacheEntry*)malloc(sizeof(RelCacheEntry));
   *(RelCacheTable::relCache[RELCAT_RELID]) = relCacheEntry;
 
-	//part of exercise 1
-	// Set up Students in the relation cache
-	Attribute record[RELCAT_NO_ATTRS];
-	relCatBlock.getRecord(record, 2);
-
-	RelCacheEntry studentsEntry;
-	RelCacheTable::recordToRelCatEntry(record, &studentsEntry.relCatEntry);
-	studentsEntry.recId.block = RELCAT_BLOCK;
-	studentsEntry.recId.slot = 2;
-
-	RelCacheTable::relCache[2] = (RelCacheEntry*)malloc(sizeof(RelCacheEntry));
-	*(RelCacheTable::relCache[2]) = studentsEntry;
-	//ends here
-
   /**** setting up Attribute Catalog relation in the Relation Cache Table ****/
   Attribute attrCatRelRecord[RELCAT_NO_ATTRS];
   relCatBlock.getRecord(attrCatRelRecord, RELCAT_SLOTNUM_FOR_ATTRCAT);
@@ -65,7 +50,26 @@ OpenRelTable::OpenRelTable() {
   *(RelCacheTable::relCache[ATTRCAT_RELID]) = attrCatRelCacheEntry;
 
 
+//For Exercise 1
+Attribute studentsRecord[RELCAT_NO_ATTRS];
 
+relCatBlock.getRecord(studentsRecord, 2);
+
+RelCacheEntry studentsEntry;
+
+RelCacheTable::recordToRelCatEntry(
+    studentsRecord,
+    &studentsEntry.relCatEntry
+);
+
+studentsEntry.recId.block = RELCAT_BLOCK;
+studentsEntry.recId.slot = 2;
+
+RelCacheTable::relCache[2] =
+    (RelCacheEntry*)malloc(sizeof(RelCacheEntry));
+
+*(RelCacheTable::relCache[2]) = studentsEntry;
+//ends here
 
 
 
@@ -99,24 +103,24 @@ OpenRelTable::OpenRelTable() {
 		prev = entry;
   }
 
-	//part of Exercise 1
+	// For Exercise 1: setting up Students in the Attribute Cache Table
 	AttrCacheEntry* prevStudents = nullptr;
 	int currentBlock = ATTRCAT_BLOCK;
+
 	while (currentBlock != -1) 
 	{
 		RecBuffer attrCatBuffer(currentBlock);
-
 		HeadInfo attrCatHeader;
 		attrCatBuffer.getHeader(&attrCatHeader);
-
 		for (int i = 0; i < attrCatHeader.numEntries; i++) 
 		{
 			attrCatBuffer.getRecord(attrCatRecord, i);
-			if (strcmp(attrCatRecord[ATTRCAT_REL_NAME_INDEX].sVal,"Students") == 0) 
+
+			// Find attribute catalog entries belonging to Students
+			if (strcmp(attrCatRecord[ATTRCAT_REL_NAME_INDEX].sVal, "Students") == 0) 
 			{
 				AttrCacheEntry* entry =(AttrCacheEntry*)malloc(sizeof(AttrCacheEntry));
 				AttrCacheTable::recordToAttrCatEntry(attrCatRecord, &entry->attrCatEntry);
-
 				entry->recId.block = currentBlock;
 				entry->recId.slot = i;
 				entry->next = nullptr;
@@ -204,18 +208,29 @@ OpenRelTable::~OpenRelTable() {
 }
 
 
+/* This function will open a relation having name `relName`.
+Since we are currently only working with the relation and attribute catalog, we
+will just hardcode it. In subsequent stages, we will loop through all the relations
+and open the appropriate one.
+*/
+int OpenRelTable::getRelId(char relName[ATTR_SIZE]) {
 
+  // if relname is RELCAT_RELNAME, return RELCAT_RELID
+	if (strcmp(relName, RELCAT_RELNAME) == 0) 
+	{
+    return RELCAT_RELID;
+	}
+  // if relname is ATTRCAT_RELNAME, return ATTRCAT_RELID
+	if (strcmp(relName, ATTRCAT_RELNAME) == 0) 
+	{
+    return ATTRCAT_RELID;
+  }
 
-// int OpenRelTable::getRelId(char relName[ATTR_SIZE]) 
-// {
+	//For Exercise 1
+	if (strcmp(relName, "Students") == 0)
+	{
+		return 2;
+	}
 
-//     for (int i = 0; i < MAX_OPEN; i++) {
-// 			if (tableMetaInfo[i].free == false &&
-// 			strcmp(tableMetaInfo[i].relName, relName) == 0) 
-// 			{
-// 				return i;
-// 			}
-//     }
-
-//     return E_RELNOTOPEN;
-// }
+	return E_RELNOTOPEN;
+}
