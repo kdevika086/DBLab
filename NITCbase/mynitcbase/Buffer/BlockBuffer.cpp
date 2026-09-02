@@ -56,40 +56,86 @@ int RecBuffer::getRecord(union Attribute *rec, int slotNum) {
   return SUCCESS;
 }
 
-int RecBuffer::setRecord(union Attribute *rec, int slotNum) {
+int RecBuffer::setRecord(union Attribute *rec, int slotNum)
+{
+  unsigned char *bufferPtr;
+  // get the buffer containing the block
+  int ret = loadBlockAndGetBufferPtr(&bufferPtr);
+  if (ret != SUCCESS)
+  {
+    return ret;
+  }
+  // get the header of the block
   struct HeadInfo head;
-  this->getHeader(&head);
+  ret = this->getHeader(&head);
+  if (ret != SUCCESS)
+  {
+    return ret;
+  }
 
   int attrCount = head.numAttrs;
   int slotCount = head.numSlots;
+  // check if slotNum is valid
+  if (slotNum < 0 || slotNum >= slotCount)
+  {
+    return E_OUTOFBOUND;
+  }
 
-  unsigned char buffer[BLOCK_SIZE];
-	Disk::readBlock(buffer, this->blockNum);
-
+  // calculate the size of one record
   int recordSize = attrCount * ATTR_SIZE;
-  unsigned char *slotPointer = buffer+ HEADER_SIZE+ slotCount + (recordSize*slotNum);
+  // point to the required record in the buffer
+  unsigned char *slotPointer = bufferPtr + HEADER_SIZE + slotCount + (recordSize * slotNum);
 
+  // copy the input record into the buffer
   memcpy(slotPointer, rec, recordSize);
-  Disk::writeBlock(buffer, this->blockNum);
+
+  // mark the buffer as dirty
+  ret = StaticBuffer::setDirtyBit(this->blockNum);
+  if (ret != SUCCESS)
+  {
+    return ret;
+  }
 
   return SUCCESS;
 }
 
-int BlockBuffer::loadBlockAndGetBufferPtr(unsigned char **buffPtr) {
-  // check whether the block is already present in the buffer using StaticBuffer.getBufferNum()
+int BlockBuffer::loadBlockAndGetBufferPtr(unsigned char **buffPtr) 
+{
+  // check whether the block is already present in the buffer
   int bufferNum = StaticBuffer::getBufferNum(this->blockNum);
 
-  if (bufferNum == E_BLOCKNOTINBUFFER) {
-    bufferNum = StaticBuffer::getFreeBuffer(this->blockNum);
-
-    if (bufferNum == E_OUTOFBOUND) {
-      return E_OUTOFBOUND;
-    }
-
-    Disk::readBlock(StaticBuffer::blocks[bufferNum], this->blockNum);
+  // blockNum is outside the valid range
+  if (bufferNum == E_OUTOFBOUND)
+  {
+    return E_OUTOFBOUND;
   }
 
-  // store the pointer to this buffer (blocks[bufferNum]) in *buffPtr
+  // block is already present in the buffer
+  if (bufferNum != E_BLOCKNOTINBUFFER)
+  {
+    // increment timestamp of all other occupied buffers
+    for (int bufferIndex = 0; bufferIndex < BUFFER_CAPACITY; bufferIndex++)
+    {
+      if (bufferIndex != bufferNum && StaticBuffer::metainfo[bufferIndex].free == false)
+      {
+        StaticBuffer::metainfo[bufferIndex].timeStamp++;
+      }
+    }
+    // this buffer was just accessed, so reset its timestamp
+    StaticBuffer::metainfo[bufferNum].timeStamp = 0;
+  }
+  else
+  {
+    // block is not in buffer, so allocate a buffer
+    bufferNum = StaticBuffer::getFreeBuffer(this->blockNum);
+    if (bufferNum == E_OUTOFBOUND)
+    {
+      return E_OUTOFBOUND;
+    }
+    // load the block from disk into the allocated buffer
+    Disk::readBlock(StaticBuffer::blocks[bufferNum], this->blockNum);
+  }
+  // store pointer to the buffer containing the block
   *buffPtr = StaticBuffer::blocks[bufferNum];
 
   return SUCCESS;
