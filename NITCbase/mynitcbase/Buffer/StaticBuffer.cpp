@@ -1,28 +1,46 @@
 #include "StaticBuffer.h"
 
 unsigned char StaticBuffer::blocks[BUFFER_CAPACITY][BLOCK_SIZE];
-
 struct BufferMetaInfo StaticBuffer::metainfo[BUFFER_CAPACITY];
+
+// declare the blockAllocMap array
+unsigned char StaticBuffer::blockAllocMap[DISK_BLOCKS];
 
 StaticBuffer::StaticBuffer() 
 {
-  // initialise all blocks as free
-  for (int bufferIndex=0 ; bufferIndex< BUFFER_CAPACITY; bufferIndex+=1)
-	{
-  	metainfo[bufferIndex].free = true;
+  // copy blockAllocMap blocks from disk to buffer (using readblock() of disk)
+  // blocks 0 to 3
+  for (int i = 0; i < 4; i++) 
+  {
+    Disk::readBlock(blockAllocMap + i * BLOCK_SIZE, i);
+  }
+
+  /* initialise metainfo of all the buffer blocks with
+     dirty:false, free:true, timestamp:-1 and blockNum:-1
+  */
+  for (int bufferIndex = 0; bufferIndex < BUFFER_CAPACITY; bufferIndex++) 
+  {
+    metainfo[bufferIndex].free = true;
     metainfo[bufferIndex].dirty = false;
     metainfo[bufferIndex].timeStamp = -1;
     metainfo[bufferIndex].blockNum = -1;
   }
 }
 
-StaticBuffer::~StaticBuffer()
-{
-  for (int bufferIndex = 0; bufferIndex < BUFFER_CAPACITY; bufferIndex++)
+StaticBuffer::~StaticBuffer() {
+  // copy blockAllocMap blocks from buffer to disk(using writeblock() of disk)
+  for (int i = 0; i < 4; i++) 
   {
-    if (metainfo[bufferIndex].free == false && metainfo[bufferIndex].dirty == true)
+    Disk::writeBlock(blockAllocMap + i * BLOCK_SIZE, i);
+  }
+  /*iterate through all the buffer blocks,
+    write back blocks with metainfo as free:false,dirty:true
+  */
+  for (int bufferIndex = 0; bufferIndex < BUFFER_CAPACITY; bufferIndex++) 
+  {
+    if (metainfo[bufferIndex].free == false && metainfo[bufferIndex].dirty == true) 
     {
-      Disk::writeBlock(blocks[bufferIndex],metainfo[bufferIndex].blockNum);
+      Disk::writeBlock(blocks[bufferIndex], metainfo[bufferIndex].blockNum);
     }
   }
 }

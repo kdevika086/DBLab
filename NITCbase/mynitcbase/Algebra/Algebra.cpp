@@ -150,3 +150,69 @@ bool isNumber(char *str) {
   int ret = sscanf(str, "%f %n", &ignore, &len);
   return ret == 1 && len == strlen(str);
 }
+
+
+int Algebra::insert(char relName[ATTR_SIZE], int nAttrs, char record[][ATTR_SIZE])
+{
+  if (strcmp(relName, "RELATIONCAT") == 0 || strcmp(relName, "ATTRIBUTECAT") == 0)
+  {
+    return E_NOTPERMITTED;
+  }
+
+  // get the relation's rel-id using OpenRelTable::getRelId() method
+  int relId = OpenRelTable::getRelId(relName);
+
+  // if relation is not open in open relation table, return E_RELNOTOPEN
+  if (relId == E_RELNOTOPEN)
+  {
+    return E_RELNOTOPEN;
+  }
+
+  // get the relation catalog entry from relation cache
+  RelCatEntry relCatEntry;
+  int ret = RelCacheTable::getRelCatEntry(relId, &relCatEntry);
+  if (ret != SUCCESS)
+  {
+    return ret;
+  }
+
+  /* if relCatEntry.numAttrs != numberOfAttributes in relation, return E_NATTRMISMATCH */
+  if (relCatEntry.numAttrs != nAttrs)
+  {
+    return E_NATTRMISMATCH;
+  }
+
+  Attribute recordValues[nAttrs];
+
+  //Converting 2D char array of record values to Attribute array recordValues
+  for (int i = 0; i < nAttrs; i++)
+  {
+    // get the attr-cat entry for the i'th attribute from the attr-cache
+    AttrCatEntry attrCatEntry;
+    ret = AttrCacheTable::getAttrCatEntry(relId, i, &attrCatEntry);
+    if (ret != SUCCESS)
+    {
+      return ret;
+    }
+
+    int type = attrCatEntry.attrType;
+    if (type == NUMBER)
+    {
+      if (isNumber(record[i]))
+      {
+        recordValues[i].nVal = atof(record[i]);
+      }
+      else
+      {
+        return E_ATTRTYPEMISMATCH;
+      }
+    }
+    else if (type == STRING)
+    {
+      strcpy(recordValues[i].sVal, record[i]);
+    }
+  }
+
+  int retVal = BlockAccess::insert(relId, recordValues);
+  return retVal;
+}
