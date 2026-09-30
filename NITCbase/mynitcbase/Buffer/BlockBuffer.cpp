@@ -374,3 +374,29 @@ int BlockBuffer::getBlockNum()
 {
   return this->blockNum;
 }
+
+
+
+void BlockBuffer::releaseBlock()
+{
+
+  // if blockNum is INVALID_BLOCKNUM (-1), or it is invalidated already, do nothing
+  if (this->blockNum == INVALID_BLOCKNUM)
+  {
+    return;
+  }
+
+  int bufferNum = StaticBuffer::getBufferNum(this->blockNum);
+
+  // if the block is present in the buffer, free the buffer
+  if (bufferNum != E_BLOCKNOTINBUFFER)
+  {
+    StaticBuffer::metainfo[bufferNum].free = true;
+  }
+
+  // Mark the block as unused in the block allocation map
+  StaticBuffer::blockAllocMap[this->blockNum] = UNUSED_BLK;
+
+  // set the object's blockNum to INVALID_BLOCK (-1)
+  this->blockNum = INVALID_BLOCKNUM;
+}
