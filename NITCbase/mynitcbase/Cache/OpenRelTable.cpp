@@ -112,37 +112,73 @@ OpenRelTable::OpenRelTable()
 }
 
 
-OpenRelTable::~OpenRelTable() 
+OpenRelTable::~OpenRelTable()
 {
-
-  // close all open relations (from rel-id = 2 onwards. Why?)
-  for (int i = 2; i < MAX_OPEN; ++i) {
-    if (!tableMetaInfo[i].free) {
-      OpenRelTable::closeRel(i); // we will implement this function later
+  // Close all open relations (from rel-id = 2 onwards)
+  for (int i = 2; i < MAX_OPEN; ++i)
+  {
+    if (!tableMetaInfo[i].free)
+    {
+      OpenRelTable::closeRel(i);
     }
   }
 
-  // free the memory allocated for rel-id 0 and 1 in the caches
-  free(RelCacheTable::relCache[RELCAT_RELID]);
+  /**** Closing the Attribute Catalog relation in the relation cache ****/
+  if (RelCacheTable::relCache[ATTRCAT_RELID]->dirty)
+  {
+    RelCatEntry relCatEntry = RelCacheTable::relCache[ATTRCAT_RELID]->relCatEntry;
+    Attribute relCatRecord[RELCAT_NO_ATTRS];
+    RelCacheTable::relCatEntryToRecord(&relCatEntry, relCatRecord);
+
+    RecId recId =RelCacheTable::relCache[ATTRCAT_RELID]->recId;
+    RecBuffer relCatBlock(recId.block);
+    relCatBlock.setRecord(relCatRecord, recId.slot);
+  }
+
+  // Free the relation cache entry of ATTRIBUTECAT
   free(RelCacheTable::relCache[ATTRCAT_RELID]);
+  RelCacheTable::relCache[ATTRCAT_RELID] = nullptr;
 
-  // Free RELATIONCAT attribute cache linked list
-  AttrCacheEntry* current = AttrCacheTable::attrCache[RELCAT_RELID];
 
-  while (current != nullptr) {
-		AttrCacheEntry* next = current->next;
-		free(current);
-		current = next;
+  /**** Closing the Relation Catalog relation in the relation cache ****/
+  if (RelCacheTable::relCache[RELCAT_RELID]->dirty)
+  {
+    RelCatEntry relCatEntry =RelCacheTable::relCache[RELCAT_RELID]->relCatEntry;
+    Attribute relCatRecord[RELCAT_NO_ATTRS];
+    RelCacheTable::relCatEntryToRecord(&relCatEntry, relCatRecord);
+
+    RecId recId =RelCacheTable::relCache[RELCAT_RELID]->recId;
+    RecBuffer relCatBlock(recId.block);
+
+    relCatBlock.setRecord(relCatRecord, recId.slot);
   }
-  // Free ATTRIBUTECAT attribute cache linked list
-  current = AttrCacheTable::attrCache[ATTRCAT_RELID];
 
-  while (current != nullptr) 
-	{
-		AttrCacheEntry* next = current->next;
-		free(current);
-		current = next;
+  // Free the relation cache entry of RELATIONCAT
+  free(RelCacheTable::relCache[RELCAT_RELID]);
+  RelCacheTable::relCache[RELCAT_RELID] = nullptr;
+
+
+  /**** Free attribute cache entries of RELATIONCAT ****/
+  AttrCacheEntry* current =AttrCacheTable::attrCache[RELCAT_RELID];
+  while (current != nullptr)
+  {
+    AttrCacheEntry* next = current->next;
+    free(current);
+    current = next;
   }
+  AttrCacheTable::attrCache[RELCAT_RELID] = nullptr;
+
+
+  /**** Free attribute cache entries of ATTRIBUTECAT ****/
+  current =AttrCacheTable::attrCache[ATTRCAT_RELID];
+
+  while (current != nullptr)
+  {
+    AttrCacheEntry* next = current->next;
+    free(current);
+    current = next;
+  }
+  AttrCacheTable::attrCache[ATTRCAT_RELID] = nullptr;
 }
 
 
