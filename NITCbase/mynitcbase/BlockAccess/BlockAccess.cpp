@@ -741,8 +741,9 @@ int BlockAccess::deleteRelation(char relName[ATTR_SIZE])
 					return ret;
 				}
 			}
+			attrCatBuffer.releaseBlock();
 		}
-		attrCatBuffer.releaseBlock();
+		
 
 		if (rootBlock != -1) 
 		{

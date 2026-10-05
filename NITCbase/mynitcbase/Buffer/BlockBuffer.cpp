@@ -6,7 +6,18 @@
 // constructor 1
 BlockBuffer::BlockBuffer(char blockType)
 {
-    this->blockNum = getFreeBlock(blockType);
+  if (blockType == 'R')
+  {
+    this->blockNum = getFreeBlock(REC);
+  }
+  else if (blockType == 'I')
+  {
+    this->blockNum = getFreeBlock(IND_INTERNAL);
+  }
+  else if (blockType == 'L')
+  {
+    this->blockNum = getFreeBlock(IND_LEAF);
+  }
 }
 
 
@@ -44,6 +55,8 @@ int BlockBuffer::getHeader(struct HeadInfo *head)
   memcpy(&head->numEntries, bufferPtr + 16, 4);
   memcpy(&head->rblock, bufferPtr + 12, 4);
   memcpy(&head->lblock, bufferPtr + 8, 4);
+  memcpy(&head->pblock, bufferPtr + 4, 4);
+  memcpy(&head->blockType, bufferPtr, 4);
 
   return SUCCESS;
 }

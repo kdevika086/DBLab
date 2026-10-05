@@ -182,7 +182,7 @@ int Algebra::insert(char relName[ATTR_SIZE], int nAttrs, char record[][ATTR_SIZE
     return E_NATTRMISMATCH;
   }
 
-  Attribute recordValues[nAttrs];
+  Attribute recordValues[nAttrs] = {};
 
   //Converting 2D char array of record values to Attribute array recordValues
   for (int i = 0; i < nAttrs; i++)
