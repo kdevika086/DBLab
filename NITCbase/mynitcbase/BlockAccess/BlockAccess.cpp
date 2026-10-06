@@ -825,3 +825,74 @@ int BlockAccess::deleteRelation(char relName[ATTR_SIZE])
 	}
 	return SUCCESS;
 }
+
+
+
+
+
+int BlockAccess::project(int relId, Attribute *record) 
+{
+	RecId prevRecId;
+  RelCacheTable::getSearchIndex(relId, &prevRecId);
+
+	int block, slot;
+	if (prevRecId.block == -1 && prevRecId.slot == -1)
+	{
+		// (new project operation. start from beginning)
+		RelCatEntry relCatEntry;
+		RelCacheTable::getRelCatEntry(relId, &relCatEntry);
+		block = relCatEntry.firstBlk;
+		slot = 0;
+	}
+	else
+	{
+		// (a project/search operation is already in progress)
+		block = prevRecId.block;
+    slot = prevRecId.slot + 1;		
+	}
+
+
+	// The following code finds the next record of the relation
+	while (block != -1)
+	{
+		RecBuffer recBuffer(block);
+
+		HeadInfo head;
+		recBuffer.getHeader(&head);
+
+		unsigned char slotMap[head.numSlots];
+		recBuffer.getSlotMap(slotMap);
+
+		if(slot >= head.numSlots)
+		{
+			// (no more slots in this block)
+			block = head.rblock;
+			slot = 0;
+		}
+		else if (slotMap[slot] == SLOT_UNOCCUPIED)
+		{ 
+			// (i.e slot-th entry in slotMap contains SLOT_UNOCCUPIED)
+			slot++;
+		}
+		else 
+		{
+			// (the next occupied slot / record has been found)
+			break;
+		}
+	}
+
+	if (block == -1)
+	{
+		// (a record was not found. all records exhausted)
+		return E_NOTFOUND;
+	}
+
+	// declare nextRecId to store the RecId of the record found
+	RecId nextRecId{block, slot};
+  RelCacheTable::setSearchIndex(relId, &nextRecId);
+
+	RecBuffer recBuffer(nextRecId.block);
+  recBuffer.getRecord(record, nextRecId.slot);
+
+	return SUCCESS;
+}
